@@ -1,0 +1,93 @@
+@startuml Component Diagram - MTGMS
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+LAYOUT_WITH_LEGEND()
+
+title Component Diagram - Next.js Web Application (Modular Monolith)
+
+Container_Boundary(web_app, "Next.js Web Application") {
+
+    Component(ui_layer, "Presentation Layer", "React Server + Client Components", "Renders UI, handles user interactions")
+
+    Component(api_routes, "API Routes", "Next.js App Router API", "REST API endpoints for CRUD operations")
+
+    Component(auth_service, "Authentication Service", "NextAuth.js", "Handles login, session management, password validation")
+
+    Component(auth_module, "Auth Module", "TypeScript", "User authentication business logic")
+    Component(gym_module, "Gym Module", "TypeScript", "Gym profile management")
+    Component(teacher_module, "Teacher Module", "TypeScript", "Teacher CRUD, scheduling")
+    Component(student_module, "Student Module", "TypeScript", "Student CRUD, enrollment")
+    Component(class_module, "Class Module", "TypeScript", "Class CRUD, capacity management")
+    Component(payment_module, "Payment Module", "TypeScript", "Payment tracking, status calculation")
+    Component(notification_module, "Notification Module", "TypeScript", "SMS/WhatsApp notifications (Nice-to-Have)")
+    Component(multi_tenancy, "Multi-Tenancy Module", "TypeScript", "Tenant isolation logic, gym_id filtering")
+
+    Component(data_layer, "Data Access Layer", "Prisma ORM", "Database queries, migrations, type-safe ORM")
+
+    ComponentDb(database, "PostgreSQL Database", "Neon", "Multi-tenant data with gym_id isolation")
+}
+
+System_Ext(browser, "User Browser", "Chrome/Firefox/Edge")
+System_Ext(external_apis, "External APIs", "Twilio SMS, WhatsApp")
+
+Rel(browser, ui_layer, "HTTP Requests", "HTTPS")
+Rel(ui_layer, api_routes, "API Calls", "JSON/REST")
+
+Rel(api_routes, auth_service, "Validates sessions", "")
+Rel(api_routes, auth_module, "User operations", "")
+Rel(api_routes, gym_module, "Gym operations", "")
+Rel(api_routes, teacher_module, "Teacher operations", "")
+Rel(api_routes, student_module, "Student operations", "")
+Rel(api_routes, class_module, "Class operations", "")
+Rel(api_routes, payment_module, "Payment operations", "")
+Rel(api_routes, notification_module, "Notification operations", "")
+
+Rel(auth_module, multi_tenancy, "Uses", "")
+Rel(gym_module, multi_tenancy, "Uses", "")
+Rel(teacher_module, multi_tenancy, "Uses", "")
+Rel(student_module, multi_tenancy, "Uses", "")
+Rel(class_module, multi_tenancy, "Uses", "")
+Rel(payment_module, multi_tenancy, "Uses", "")
+
+Rel(auth_module, data_layer, "CRUD operations", "")
+Rel(gym_module, data_layer, "CRUD operations", "")
+Rel(teacher_module, data_layer, "CRUD operations", "")
+Rel(student_module, data_layer, "CRUD operations", "")
+Rel(class_module, data_layer, "CRUD operations", "")
+Rel(payment_module, data_layer, "CRUD operations", "")
+Rel(notification_module, data_layer, "Log notifications", "")
+
+Rel(multi_tenancy, data_layer, "Adds gym_id filter", "Prisma Middleware")
+Rel(data_layer, database, "SQL queries", "PostgreSQL Protocol")
+
+Rel(notification_module, external_apis, "Send notifications", "HTTPS/REST")
+
+note right of multi_tenancy
+  **Multi-Tenancy Enforcement:**
+  - Prisma middleware automatically
+    adds gym_id to all queries
+  - Row-Level Security (RLS) as
+    secondary defense
+  - Authorization checks in API routes
+end note
+
+note right of data_layer
+  **Prisma ORM Features:**
+  - Type-safe database client
+  - Auto-generated TypeScript types
+  - Migration management
+  - Connection pooling
+  - Middleware for encryption
+    and multi-tenancy
+end note
+
+note bottom of auth_service
+  **NextAuth.js:**
+  - Session-based authentication
+  - JWT tokens in HttpOnly cookies
+  - 4-hour session timeout
+  - Account lockout after 5 failures
+  - Bcrypt password hashing
+end note
+
+@enduml

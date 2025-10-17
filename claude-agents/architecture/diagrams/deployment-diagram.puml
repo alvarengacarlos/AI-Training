@@ -1,0 +1,110 @@
+@startuml Deployment Diagram - MTGMS
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Deployment.puml
+
+LAYOUT_WITH_LEGEND()
+
+title Deployment Diagram - Muay Thai Gym Management System
+
+Deployment_Node(user_device, "User Device", "Windows/macOS/Linux/Android/iOS") {
+    Deployment_Node(browser, "Web Browser", "Chrome/Firefox/Edge") {
+        Container(web_ui, "Web Interface", "React + TypeScript", "Responsive web application")
+    }
+}
+
+Deployment_Node(vercel_platform, "Vercel Platform", "Global Edge Network") {
+    Deployment_Node(edge_network, "Edge Locations", "Global CDN") {
+        Container(cdn, "CDN Cache", "Static Assets", "Images, CSS, JS, fonts")
+    }
+
+    Deployment_Node(serverless_region, "Serverless Functions", "AWS São Paulo Region") {
+        Deployment_Node(function_instance, "Function Instance", "Node.js 20 Runtime") {
+            Container(nextjs_app, "Next.js Application", "Next.js 14 + TypeScript", "Server-side rendering + API routes")
+        }
+    }
+}
+
+Deployment_Node(neon_platform, "Neon Platform", "AWS São Paulo Region") {
+    Deployment_Node(postgres_cluster, "PostgreSQL Cluster", "Serverless PostgreSQL") {
+        ContainerDb(primary_db, "Primary Database", "PostgreSQL 15", "Multi-tenant data with auto-scaling")
+        ContainerDb(backup_storage, "Backup Storage", "Point-in-Time Recovery", "Automated daily backups, 7-30 day retention")
+    }
+}
+
+Deployment_Node(monitoring_services, "Monitoring & Observability", "Cloud Services") {
+    Container(vercel_analytics, "Vercel Analytics", "Built-in", "Performance metrics, Core Web Vitals")
+    Container(sentry, "Sentry", "Free Tier", "Error tracking, performance monitoring")
+    Container(uptimerobot, "UptimeRobot", "Free Tier", "Uptime monitoring, status page")
+}
+
+Deployment_Node(external_services, "External Services", "Third-Party APIs") {
+    Container(twilio_sms, "Twilio SMS", "Pay-per-use", "SMS notifications (Nice-to-Have)")
+    Container(whatsapp_api, "WhatsApp API", "Pay-per-use", "WhatsApp notifications (Nice-to-Have)")
+}
+
+Rel(web_ui, cdn, "Fetches static assets", "HTTPS")
+Rel(web_ui, nextjs_app, "API requests", "HTTPS/REST")
+
+Rel(cdn, edge_network, "Cached at edge", "")
+
+Rel(nextjs_app, primary_db, "Database queries", "PostgreSQL Protocol via Prisma")
+Rel(primary_db, backup_storage, "Continuous backup", "WAL streaming")
+
+Rel(nextjs_app, vercel_analytics, "Send metrics", "HTTPS")
+Rel(nextjs_app, sentry, "Send errors, traces", "HTTPS")
+Rel(nextjs_app, uptimerobot, "Health check endpoint", "HTTPS")
+
+Rel(nextjs_app, twilio_sms, "Send SMS", "HTTPS/REST API")
+Rel(nextjs_app, whatsapp_api, "Send WhatsApp", "HTTPS/REST API")
+
+note right of vercel_platform
+  **Vercel Configuration:**
+  - Deployment: Automatic via Git push
+  - Regions: Auto-distributed globally
+  - Scaling: Auto-scales 0 to 100+ instances
+  - SSL: Automatic (Let's Encrypt)
+  - Cost: Free tier (100GB bandwidth/month)
+    or Pro $20/month for better limits
+
+  **Functions:**
+  - Runtime: Node.js 20 LTS
+  - Timeout: 10 seconds max
+  - Memory: 1024MB default
+  - Invocations: Unlimited on free tier
+end note
+
+note right of neon_platform
+  **Neon Configuration:**
+  - Type: Serverless PostgreSQL
+  - Region: AWS São Paulo (Brazil)
+  - Storage: 0.5GB free tier, 10GB Pro
+  - Compute: Auto-suspend after inactivity
+  - Connection: Pooling via PgBouncer
+  - Cost: Free tier $0/month
+    or Pro $19/month for better limits
+
+  **Features:**
+  - Branching for testing
+  - Point-in-time recovery
+  - Automated backups (daily)
+  - Encryption at rest
+end note
+
+note right of monitoring_services
+  **Monitoring Stack:**
+  - Vercel Analytics: Performance, traffic
+  - Sentry: Error tracking (5k errors/month free)
+  - UptimeRobot: Uptime checks (50 monitors free)
+
+  **Total Monitoring Cost:** $0/month (free tiers)
+end note
+
+note bottom of external_services
+  **Optional Services (Nice-to-Have):**
+  - Twilio SMS: ~$0.01 per message
+  - WhatsApp: ~$0.005 per message
+  - Estimated: $5-10/month if used
+
+  **Not Required for MVP Launch**
+end note
+
+@enduml

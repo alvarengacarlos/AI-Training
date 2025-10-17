@@ -1,0 +1,67 @@
+@startuml Container Diagram - MTGMS
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+LAYOUT_WITH_LEGEND()
+
+title Container Diagram - Muay Thai Gym Management System
+
+Person(user, "Gym Administrator", "Manages gym operations via web browser")
+
+System_Boundary(mtgms, "MTGMS") {
+    Container(web_app, "Web Application", "Next.js 14 (React + TypeScript)", "Delivers responsive web UI and REST API endpoints")
+    ContainerDb(database, "Database", "PostgreSQL 15 (Neon)", "Stores all application data with multi-tenant isolation via gym_id")
+}
+
+System_Ext(cdn, "Vercel Edge Network", "Global CDN + Load Balancing for static assets and edge caching")
+System_Ext(monitoring, "Monitoring Services", "Vercel Analytics, Sentry (errors), UptimeRobot (uptime)")
+System_Ext(sms_gateway, "SMS Gateway", "Twilio (Nice-to-Have)")
+System_Ext(whatsapp_api, "WhatsApp API", "WhatsApp Business API (Nice-to-Have)")
+
+Rel(user, cdn, "Accesses web application", "HTTPS")
+Rel(cdn, web_app, "Routes requests", "HTTPS")
+Rel(web_app, database, "Reads/writes data", "Prisma ORM / PostgreSQL Protocol")
+Rel(web_app, sms_gateway, "Sends SMS notifications", "HTTPS/REST API")
+Rel(web_app, whatsapp_api, "Sends WhatsApp messages", "HTTPS/REST API")
+Rel(web_app, monitoring, "Sends logs, errors, metrics", "HTTPS")
+
+note right of web_app
+  **Technology:**
+  - Framework: Next.js 14 (App Router)
+  - Language: TypeScript 5+
+  - UI: React 18 + Tailwind CSS + Shadcn/UI
+  - Auth: NextAuth.js (session-based)
+  - Validation: Zod
+  - State: React Context + TanStack Query
+
+  **Deployment:**
+  - Hosting: Vercel (serverless functions)
+  - Region: Auto-distributed globally
+  - Scaling: Auto-scales 0 to 100+ users
+end note
+
+note right of database
+  **Configuration:**
+  - Provider: Neon (serverless PostgreSQL)
+  - Version: PostgreSQL 15+
+  - Region: AWS São Paulo (Brazil)
+  - Features:
+    * Multi-tenancy (gym_id row filtering)
+    * Field-level encryption (pgcrypto)
+    * Connection pooling (PgBouncer)
+    * Automated backups (daily)
+    * Point-in-time recovery (7-30 days)
+
+  **Storage:**
+  - Free tier: 0.5GB (sufficient for MVP)
+  - Pro tier: 10GB (if needed)
+end note
+
+note right of cdn
+  **Vercel Edge Network:**
+  - Global CDN with edge caching
+  - Automatic SSL/TLS
+  - DDoS protection
+  - Low latency for Brazilian users
+end note
+
+@enduml

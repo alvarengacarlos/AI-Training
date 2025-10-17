@@ -1,0 +1,46 @@
+@startuml System Context Diagram - MTGMS
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+LAYOUT_WITH_LEGEND()
+
+title System Context Diagram - Muay Thai Gym Management System
+
+Person(root_user, "Root User", "System administrator managing multiple gyms")
+Person(gym_admin, "Gym Administrator", "Gym manager handling daily operations for a single gym")
+
+System(mtgms, "Muay Thai Gym Management System", "Multi-tenant SaaS web application for managing gyms, teachers, students, classes, and payment tracking")
+
+System_Ext(sms_gateway, "SMS Gateway", "Twilio SMS service for sending payment reminders (Nice-to-Have)")
+System_Ext(whatsapp_api, "WhatsApp Business API", "WhatsApp service for sending payment reminders (Nice-to-Have)")
+
+Rel(root_user, mtgms, "Manages all gyms, creates administrators", "HTTPS/Web Browser")
+Rel(gym_admin, mtgms, "Manages single gym: students, teachers, classes, payments", "HTTPS/Web Browser")
+
+Rel(mtgms, sms_gateway, "Sends SMS notifications", "API/HTTPS")
+Rel(mtgms, whatsapp_api, "Sends WhatsApp notifications", "API/HTTPS")
+
+note right of mtgms
+  **Key Features:**
+  - Multi-tenant with complete data isolation
+  - Gym, teacher, student, class management
+  - Payment tracking (offline, manual entry)
+  - Dashboard and schedule visualization
+  - LGPD compliant (Brazilian data protection)
+  - Responsive web design (mobile-friendly)
+
+  **Scale:**
+  - 100 concurrent users
+  - 100 gyms
+  - ~20,000 students
+
+  **Budget:** $0-39/month
+end note
+
+note right of gym_admin
+  **Not in MVP:**
+  Students and teachers do not have
+  system access. All data managed
+  by gym administrators.
+end note
+
+@enduml

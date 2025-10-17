@@ -1,0 +1,232 @@
+@startuml Database ERD - MTGMS
+!define Table(name,desc) class name as "desc" << (T,#FFAAAA) >>
+!define primary_key(x) <b><u>x</u></b>
+!define foreign_key(x) <i>x</i>
+!define unique(x) <color:green>x</color>
+!define not_null(x) <color:red>x</color>
+
+hide methods
+hide stereotypes
+
+title Entity Relationship Diagram - Muay Thai Gym Management System
+
+' Root level entities
+entity "root_user" as root_user {
+  primary_key(root_user_id) : UUID
+  --
+  not_null(username) : VARCHAR(50) unique
+  not_null(password_hash) : VARCHAR(255)
+  email : VARCHAR(100) unique
+  not_null(created_at) : TIMESTAMP
+  last_login : TIMESTAMP
+  not_null(is_active) : BOOLEAN
+}
+
+entity "gym" as gym {
+  primary_key(gym_id) : UUID
+  --
+  not_null(name) : VARCHAR(100)
+  address : TEXT
+  not_null(owner_name) : VARCHAR(100)
+  icon_url : VARCHAR(500)
+  not_null(created_at) : TIMESTAMP
+  not_null(updated_at) : TIMESTAMP
+  not_null(is_active) : BOOLEAN
+}
+
+entity "administrator" as administrator {
+  primary_key(admin_id) : UUID
+  --
+  foreign_key(gym_id) : UUID
+  not_null(username) : VARCHAR(50) unique
+  not_null(password_hash) : VARCHAR(255)
+  email : VARCHAR(100)
+  full_name : VARCHAR(100)
+  not_null(created_at) : TIMESTAMP
+  last_login : TIMESTAMP
+  not_null(is_active) : BOOLEAN
+}
+
+' Gym-scoped entities
+entity "teacher" as teacher {
+  primary_key(teacher_id) : UUID
+  --
+  foreign_key(gym_id) : UUID
+  not_null(name) : VARCHAR(100)
+  not_null(phone) : VARCHAR(20)
+  address : TEXT
+  not_null(birth_date) : DATE
+  not_null(created_at) : TIMESTAMP
+  not_null(updated_at) : TIMESTAMP
+  not_null(is_active) : BOOLEAN
+}
+
+entity "work_schedule" as work_schedule {
+  primary_key(schedule_id) : UUID
+  --
+  foreign_key(teacher_id) : UUID
+  not_null(day_of_week) : SMALLINT (1-5)
+  not_null(start_time) : TIME
+  not_null(end_time) : TIME
+  not_null(created_at) : TIMESTAMP
+  not_null(updated_at) : TIMESTAMP
+}
+
+entity "student" as student {
+  primary_key(student_id) : UUID
+  --
+  foreign_key(gym_id) : UUID
+  not_null(name) : VARCHAR(100)
+  not_null(phone) : VARCHAR(20)
+  address : TEXT
+  not_null(birth_date) : DATE
+  not_null(monthly_price) : DECIMAL(10,2)
+  not_null(billing_cycle_day) : SMALLINT (1-31)
+  not_null(created_at) : TIMESTAMP
+  not_null(updated_at) : TIMESTAMP
+  not_null(is_active) : BOOLEAN
+}
+
+entity "class" as class {
+  primary_key(class_id) : UUID
+  --
+  foreign_key(gym_id) : UUID
+  foreign_key(teacher_id) : UUID
+  not_null(name) : VARCHAR(100)
+  not_null(room) : VARCHAR(50)
+  not_null(max_capacity) : INTEGER
+  not_null(class_time) : TIME
+  not_null(duration_minutes) : INTEGER
+  not_null(created_at) : TIMESTAMP
+  not_null(updated_at) : TIMESTAMP
+  not_null(is_active) : BOOLEAN
+}
+
+entity "class_schedule" as class_schedule {
+  primary_key(class_schedule_id) : UUID
+  --
+  foreign_key(class_id) : UUID
+  not_null(day_of_week) : SMALLINT (1-7)
+}
+
+entity "enrollment" as enrollment {
+  primary_key(enrollment_id) : UUID
+  --
+  foreign_key(student_id) : UUID
+  foreign_key(class_id) : UUID
+  not_null(enrollment_date) : DATE
+  not_null(created_at) : TIMESTAMP
+  not_null(is_active) : BOOLEAN
+  --
+  unique: (student_id, class_id) where is_active = true
+}
+
+entity "payment_record" as payment_record {
+  primary_key(payment_id) : UUID
+  --
+  foreign_key(student_id) : UUID
+  foreign_key(recorded_by) : UUID (administrator)
+  not_null(payment_date) : DATE
+  not_null(amount) : DECIMAL(10,2)
+  not_null(payment_method) : VARCHAR(20)
+  not_null(reference_month) : DATE
+  notes : TEXT
+  not_null(created_at) : TIMESTAMP
+}
+
+' Nice-to-have entities
+entity "notification_settings" as notification_settings {
+  primary_key(settings_id) : UUID
+  --
+  foreign_key(gym_id) : UUID unique
+  not_null(enabled) : BOOLEAN
+  not_null(mode) : VARCHAR(20) (AUTOMATED/MANUAL)
+  not_null(channels) : VARCHAR[] (SMS/WHATSAPP)
+  foreign_key(updated_by) : UUID (administrator)
+  not_null(updated_at) : TIMESTAMP
+}
+
+entity "notification_log" as notification_log {
+  primary_key(notification_id) : UUID
+  --
+  foreign_key(student_id) : UUID
+  not_null(notification_type) : VARCHAR(50)
+  not_null(channel) : VARCHAR(20)
+  not_null(message) : TEXT
+  not_null(sent_at) : TIMESTAMP
+  not_null(status) : VARCHAR(20) (SENT/FAILED/PENDING)
+  error_message : TEXT
+  foreign_key(triggered_by) : UUID (administrator)
+}
+
+' Relationships
+root_user ||--o{ gym : "manages"
+gym ||--o{ administrator : "has"
+gym ||--o{ teacher : "employs"
+gym ||--o{ student : "has members"
+gym ||--o{ class : "offers"
+gym ||--o| notification_settings : "configures"
+
+teacher ||--o{ work_schedule : "has schedule"
+teacher ||--o{ class : "teaches"
+
+student ||--o{ enrollment : "enrolled in"
+student ||--o{ payment_record : "makes payments"
+student ||--o{ notification_log : "receives notifications"
+
+class ||--o{ class_schedule : "scheduled on"
+class ||--o{ enrollment : "has enrollments"
+
+administrator ||--o{ payment_record : "records"
+administrator ||--o{ notification_log : "triggers"
+administrator ||--o{ notification_settings : "updates"
+
+note top of root_user
+  **Root User:**
+  - System administrator
+  - Full access to all gyms
+  - Can create new gyms
+  - Can create administrators
+end note
+
+note top of gym
+  **Multi-Tenancy Root:**
+  - Each gym is a separate tenant
+  - Complete data isolation
+  - All gym-scoped entities
+    include gym_id foreign key
+end note
+
+note right of student
+  **Encrypted Fields (LGPD):**
+  - name, phone, address
+    encrypted at application level
+    using AES-256
+  - phone_hash stored for searching
+end note
+
+note right of payment_record
+  **Immutable Records:**
+  - Payment records are immutable
+  - No updates, only corrections
+    via new records
+  - Retained indefinitely for
+    financial compliance
+end note
+
+note bottom of enrollment
+  **Unique Constraint:**
+  - Same student cannot enroll
+    in same class twice (active)
+  - Soft delete with is_active flag
+  - Re-enrollment creates new record
+end note
+
+note bottom of notification_log
+  **Nice-to-Have (MVP Optional):**
+  - SMS/WhatsApp notifications
+  - Not required for MVP launch
+  - Can be added post-MVP
+end note
+
+@enduml
